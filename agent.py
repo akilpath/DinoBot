@@ -1,17 +1,29 @@
+from collections import deque
+
 import tensorflow as tf
+import numpy as np
 
 FRAMECOUNT = 4
 
 
-class Agent():
-
+class Agent:
     def __init__(self, input_image_size):
         self.IMAGE_DIMENSIONS = input_image_size
         self.modelNetwork, self.targetNetwork = self.initializeModels(self.IMAGE_DIMENSIONS[0],
                                                                       self.IMAGE_DIMENSIONS[1])
         self.learningRate = 0.01
+        self.explorationRate = 0.5
         self.actionCount = 3
         self.epsilon = 0.75
+        self.batchSize = 16
+        self.memory = deque([])
+
+    def saveExperience(self, state, action, reward, nextState):
+        self.memory.append((state, action, reward, nextState))
+        pass
+
+    def playFromExperience(self):
+        pass
 
     def initializeModels(self, inputWidth, inputHeight):
         modelNetwork = tf.keras.models.Sequential([
@@ -45,9 +57,10 @@ class Agent():
 
         return modelNetwork, targetNetwork
 
-    def takeAction(self, state) -> float:
+    def chooseAction(self, state) -> int:
+        if np.random.random() < self.explorationRate:
+            return np.random.randint(3)
+
         output = self.modelNetwork(state, training=False)
-        print(output)
         actionToTake = tf.math.argmax(output, axis=1)
-        print(actionToTake)
         return actionToTake

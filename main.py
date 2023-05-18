@@ -3,21 +3,37 @@ import tensorflow as tf
 import numpy as np
 import PIL
 import time
+from agent import Agent
 #(680,710) to (2025,1020)
 
+FRAME_BOUNDING_BOX = (680, 710, 2025, 1020)
+INPUT_IMAGE_SIZE = ((2025-680) // 4, (1020 - 710) // 4)
 
 def main():
-    print(pyautogui.KEY_NAMES)
     time.sleep(3)
     frame = pyautogui.screenshot()
-    img = frame.crop((680, 710, 2025, 1020))
-    img.show()
-    input_image_size = (img.size[0]//4, img.size[1]//4)
-    img = img.resize((input_image_size[0], input_image_size[1]))
-    img = img.convert("L")
-    img.show()
+    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
+    npimg = np.array(img)
+    print(f"Dimensions: {npimg.shape}")
+    agent = Agent(INPUT_IMAGE_SIZE)
     while(True):
-        time.sleep(2)
-        pyautogui.keyDown("down")
+        frames = np.zeros(shape=(4,INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
+        for i in range(4):
+            time.sleep(0.010)
+            frame = pyautogui.screenshot()
+            frame = pyautogui.screenshot()
+            img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
+            npimg = np.array(img)
+            frames[i] = npimg
+        frames = frames[np.newaxis, :]
+        action = agent.takeAction(frames)
+        if action == 0:
+            pyautogui.keyDown("space")
+        elif action == 1:
+            pyautogui.keyDown("down")
+        time.sleep(0.25)
+        pyautogui.keyUp("up")
+        pyautogui.keyUp("down")
+        print("forward pass done")
 
 main()

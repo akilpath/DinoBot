@@ -12,23 +12,34 @@ from agent import Agent
 
 FRAME_BOUNDING_BOX = (1050, 340, 2410, 650)
 GAME_DONE_BOX = (1696, 512, 1760, 568)
-INPUT_IMAGE_SIZE = ((FRAME_BOUNDING_BOX[2] - FRAME_BOUNDING_BOX[0]) // 5,
-                    (FRAME_BOUNDING_BOX[3] - FRAME_BOUNDING_BOX[1]) // 5)
+INPUT_IMAGE_SIZE = (400, 400)
 GAME_OVER_STATE = Image.open("./data/gameover.png").convert("L")
 GAME_OVER_STATE = np.array(GAME_OVER_STATE)
 EPISODE_COUNT = 1000
 COPY_COUNT = 30
 
-# def test():
-#     print("Start")
-#     time.sleep(5)
-#     frame = pyautogui.screenshot()
-#     cropped = frame.crop(GAME_DONE_BOX).convert("L")
-#     npcrop = np.array(cropped)
-#     cropped.show()
-#     print(f"dim: {npcrop.shape}" )
-#     print(f"dim: {GAME_OVER_STATE.shape}")
-#     print(f"Eval: {(npcrop == GAME_OVER_STATE).all()}")
+def test():
+    print("Start")
+    time.sleep(5)
+    frame = pyautogui.screenshot()
+    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
+    img.show()
+    # cropped = frame.crop(GAME_DONE_BOX).convert("L")
+    # npcrop = np.array(cropped)
+    # cropped.show()
+    # print(f"dim: {npcrop.shape}" )
+    # print(f"dim: {GAME_OVER_STATE.shape}")
+    # print(f"Eval: {(npcrop == GAME_OVER_STATE).all()}")
+
+def doAction(action):
+    pyautogui.keyUp("space")
+    pyautogui.keyUp("down")
+
+    if action == 0:
+        pyautogui.keyDown("space")
+    elif action == 1:
+        pyautogui.keyDown("down")
+
 
 def main():
     time.sleep(4)
@@ -48,35 +59,34 @@ def main():
         pyautogui.press("space")
         timer.startTimer()
         playing = True
+        state = None
+        # delay of 2.2 seconds prevents a.i from logging information at the beginning of the game.
+        time.sleep(2.2)
         while playing:
             stepCount += 1
-            state = np.zeros(shape=(1,4,INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
-            for i in range(4):
-                time.sleep(0.01)
-                frame = pyautogui.screenshot()
+            if state is None:
+                state = np.zeros(shape=(1,4,INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
+                for i in range(4):
+                    time.sleep(0.05)
+                    frame = pyautogui.screenshot()
 
-                #test to see if the game ended
-                gameOverRegion = np.array(frame.crop(GAME_DONE_BOX).convert("L"))
-                if (gameOverRegion == GAME_OVER_STATE).all():
-                    playing = False
+                    #test to see if the game ended
+                    gameOverRegion = np.array(frame.crop(GAME_DONE_BOX).convert("L"))
+                    if (gameOverRegion == GAME_OVER_STATE).all():
+                        playing = False
 
-                img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
-                npimg = np.array(img)
-                state[0, i] = npimg
-
+                    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
+                    npimg = np.array(img)
+                    print(npimg.shape)
+                    state[0, i] = npimg
             action = agent.chooseAction(state)
 
-            if playing:
-                if action == 0:
-                    pyautogui.press("space")
-                elif action == 1:
-                    pyautogui.press("down")
-            else:
-                action = 2
+            if playing or action == 2:
+                doAction(action)
 
             nextState = np.zeros(shape=(1, 4, INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
             for i in range(4):
-                time.sleep(0.01)
+                time.sleep(0.05)
                 frame = pyautogui.screenshot()
 
                 # test to see if the game ended
@@ -89,26 +99,32 @@ def main():
                 nextState[0, i] = npimg
 
             if playing:
-                reward = 1
+                reward = 2
+                if action == 0 or action == 1:
+                    #bias towards jumping to allow it to learn more
+                    agent.saveExperience(state, action, reward, nextState)
+                    agent.saveExperience(state, action, reward, nextState)
+                    agent.saveExperience(state, action, reward, nextState)
             else:
-                reward = -10
+                reward = -100
 
             agent.saveExperience(state, action, reward, nextState)
+            state = nextState
 
-            if stepCount % COPY_COUNT == 0:
-                print("Weights copied")
-                agent.copyWeights()
-                stepCount = 0
         lasted = timer.getElapsed()
         print(f"Time survived: {lasted}")
         x[episode-1] = episode
         y[episode-1] = lasted
         agent.train()
         agent.decayEpsilon()
+        if episode % COPY_COUNT == 0:
+            print("Weights copied")
+            agent.copyWeights()
+            episode
         time.sleep(0.25)
 
-    ax.plot(x,y)
-    plot.savefig("test1.png")
+    ax.plot(x, y)
+    plot.savefig("./figures/test2.png")
 
 main()
 #test()

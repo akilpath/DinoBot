@@ -1,12 +1,14 @@
 import sys
 import matplotlib.pyplot as plot
 import pyautogui
+import pyglet.window
 import tensorflow as tf
 import numpy as np
 from PIL import Image
 import time
 from timer import Timer
 from agent import Agent
+from game import Game
 
 EPISODE_COUNT = 2000
 COPY_COUNT = 30
@@ -83,9 +85,25 @@ def main():
     plot.savefig("./figures/test2.png")
 
 
-try:
-    main()
-except pyautogui.FailSafeException as e:
-    ax.plot(x, y)
-    plot.savefig("./figures/test2.png")
-#test()
+def test():
+    game = Game()
+    game.run()
+    # window = pyglet.window.Window()
+    # label = pyglet.text.Label('Hello, world',
+    #                           font_name='Times New Roman',
+    #                           font_size=36,
+    #                           x=window.width // 2, y=window.height // 2,
+    #                           anchor_x='center', anchor_y='center')
+    # @window.event
+    # def on_draw():
+    #     window.clear()
+    #     label.draw()
+    #pyglet.app.run()
+
+
+# try:
+#     main()
+# except pyautogui.FailSafeException as e:
+#     ax.plot(x, y)
+#     plot.savefig("./figures/test2.png")
+test()

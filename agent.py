@@ -4,14 +4,10 @@ import tensorflow as tf
 import numpy as np
 import random
 
-FRAMECOUNT = 4
-
 
 class Agent:
-    def __init__(self, input_image_size):
-        self.IMAGE_DIMENSIONS = input_image_size
-        self.modelNetwork, self.targetNetwork = self.initializeModels(self.IMAGE_DIMENSIONS[0],
-                                                                      self.IMAGE_DIMENSIONS[1])
+    def __init__(self):
+        self.modelNetwork, self.targetNetwork = self.initializeModels()
         self.gamma = 0.2
         self.epsilon = 0.8
         self.decayRate = 0.999
@@ -43,23 +39,15 @@ class Agent:
             self.modelNetwork.fit(state, predictedQ, verbose=0)
 
 
-    def initializeModels(self, inputWidth, inputHeight):
+    def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputHeight, inputWidth, FRAMECOUNT)),
-            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
-            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(32),
             tf.keras.layers.Dense(128, activation= "relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputHeight, inputWidth, FRAMECOUNT)),
-            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
-            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(32),
             tf.keras.layers.Dense(128, activation="relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])

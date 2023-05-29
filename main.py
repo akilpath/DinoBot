@@ -8,11 +8,6 @@ import time
 from timer import Timer
 from agent import Agent
 
-FRAME_BOUNDING_BOX = (1125, 460, 2325, 705)
-GAME_DONE_BOX = (1696, 576, 1760, 632)
-INPUT_IMAGE_SIZE = (300, 300)
-GAME_OVER_STATE = Image.open("./data/gameover.png").convert("L")
-GAME_OVER_STATE = np.array(GAME_OVER_STATE)
 EPISODE_COUNT = 2000
 COPY_COUNT = 30
 pyautogui.PAUSE = 0.001
@@ -20,20 +15,6 @@ x = np.zeros(dtype=int, shape=EPISODE_COUNT)
 y = np.zeros(dtype=float, shape=EPISODE_COUNT)
 fig, ax = plot.subplots()
 
-def test():
-    print("Num GPUs Available: ", tf.config.list_physical_devices('GPU'))
-    print("Start")
-    time.sleep(5)
-    frame = pyautogui.screenshot()
-    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
-    img.show()
-    print(np.array(img).shape)
-    # cropped = frame.crop(GAME_DONE_BOX).convert("L")
-    # npcrop = np.array(cropped)
-    # cropped.show()
-    # print(f"dim: {npcrop.shape}" )
-    # print(f"dim: {GAME_OVER_STATE.shape}")
-    # print(f"Eval: {(npcrop == GAME_OVER_STATE).all()}")
 
 def doAction(action):
     pyautogui.keyUp("space")
@@ -48,7 +29,7 @@ def doAction(action):
 def main():
     print("Starting")
     time.sleep(4)
-    agent = Agent(INPUT_IMAGE_SIZE)
+    agent = Agent()
     stepCount = 0
 
     timer = Timer()
@@ -65,19 +46,6 @@ def main():
         while playing:
             stepCount += 1
             if state is None:
-                state = np.zeros(shape=(1,4,INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
-                for i in range(4):
-                    time.sleep(0.01)
-                    frame = pyautogui.screenshot()
-
-                    #test to see if the game ended
-                    gameOverRegion = np.array(frame.crop(GAME_DONE_BOX).convert("L"))
-                    if (gameOverRegion == GAME_OVER_STATE).all():
-                        playing = False
-
-                    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
-                    npimg = np.array(img)
-                    state[0, i] = npimg
                 state = np.transpose(state, (0, 2, 3, 1))
 
             action = agent.chooseAction(state)
@@ -85,19 +53,6 @@ def main():
             if playing or action == 2:
                 doAction(action)
 
-            nextState = np.zeros(shape=(1, 4, INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
-            for i in range(4):
-                time.sleep(0.01)
-                frame = pyautogui.screenshot()
-
-                # test to see if the game ended
-                gameOverRegion = np.array(frame.crop(GAME_DONE_BOX).convert("L"))
-                if (gameOverRegion == GAME_OVER_STATE).all():
-                    playing = False
-
-                img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
-                npimg = np.array(img)
-                nextState[0, i] = npimg
 
             nextState = np.transpose(nextState, (0, 2, 3, 1))
             if playing:

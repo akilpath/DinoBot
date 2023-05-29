@@ -42,36 +42,24 @@ class Agent:
             predictedQ[0, action] = reward + self.gamma*np.amax(targetQ) - predictedQ[0, action]
             self.modelNetwork.fit(state, predictedQ, verbose=0)
 
-    def getConv(self, inputWidth, inputHeight):
-        model = tf.keras.models.Sequential(
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputHeight, inputWidth, 1)),
-            tf.keras.layers.Conv2D(16, 3, padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
-            tf.keras.layers.Flatten())
-        return model
 
     def initializeModels(self, inputWidth, inputHeight):
-        #modelConv = self.getConv(inputWidth, inputHeight, 1)
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(FRAMECOUNT, inputHeight, inputWidth)),
-            tf.keras.layers.Conv2D(16, 3, padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, padding='same', activation="relu"),
+            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputHeight, inputWidth, FRAMECOUNT)),
+            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
+            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
             tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(512,activation="relu"),
-            tf.keras.layers.Dense(128, activation="relu"),
+            tf.keras.layers.Dense(128, activation= "relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
         modelNetwork.summary()
-
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(FRAMECOUNT, inputHeight, inputWidth)),
-            tf.keras.layers.Conv2D(16, 3, padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, padding='same', activation="relu"),
+            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputHeight, inputWidth, FRAMECOUNT)),
+            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
+            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
             tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(512, activation="relu"),
             tf.keras.layers.Dense(128, activation="relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])

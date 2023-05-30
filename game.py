@@ -17,7 +17,7 @@ class Game(pyglet.window.Window):
         self.label = pyglet.text.Label('Score',
                                        font_name='Times New Roman',
                                        font_size=36,
-                                       x=self.width // 2, y=self.height // 2,
+                                       x=self.width // 2, y=550,
                                        anchor_x='center', anchor_y='center')
         self.floor = pyglet.shapes.Rectangle(0, 0, 1500, 200)
         self.player = Player()
@@ -26,12 +26,16 @@ class Game(pyglet.window.Window):
         self.lastFrame = 0
 
         self.obstacles = deque(maxlen=10)
+        self.playing = True
 
     def run(self):
         self.lastFrame = time.time()
         pyglet.app.run()
 
     def on_draw(self):
+        if not self.playing:
+            return
+
         self.clear()
         self.label.draw()
         self.floor.draw()
@@ -49,18 +53,35 @@ class Game(pyglet.window.Window):
         if random.randint(0, 100) == 1:
             self.obstacles.append(Obstacle())
 
+        self.playing = not self.checkCollisions()
+
     def on_key_press(self, symbol, modifiers):
         if symbol == pyglet.window.key.SPACE and self.player.ground():
-            self.player.yspeed = 1000
+            self.player.yspeed = 1100
 
     def getState(self):
         pass
 
+    def checkCollisions(self):
+        vertices = (
+            (self.player.x(), self.player.y()),
+            (self.player.x() + self.player.width, self.player.y()),
+            (self.player.x(), self.player.y() + self.player.width),
+            (self.player.x() + self.player.width, self.player.y() + self.player.width))
+        for obstacle in self.obstacles:
+            for vertex in vertices:
+                x, y = vertex
+                inXRange = (obstacle.x() <= x <= obstacle.x() + obstacle.width)
+                inYRange = (obstacle.y() <= y <= obstacle.y() + obstacle.height)
+                if inXRange and inYRange:
+                    return True
+        return False
+
 
 class Player:
     def __init__(self):
-        self.radius = 30
-        self.sprite = pyglet.shapes.Circle(80, 200 + self.radius, self.radius, color=(0, 0, 255, 255))
+        self.width = 50
+        self.sprite = pyglet.shapes.Rectangle(80, 200, self.width, self.width, color=(0, 0, 255, 255))
 
         self.yspeed = 0
         # acceleration due to gravity
@@ -72,9 +93,9 @@ class Player:
 
     def updatePos(self, dt):
         newY = self.sprite.y + self.yspeed * dt
-        if newY <= 200 + self.radius:
+        if newY <= 200:
             self.yspeed = 0
-            newY = 200 + self.radius
+            newY = 200
         else:
             self.yspeed -= self.gravity * dt
         self.sprite.x, self.sprite.y = 80, newY
@@ -89,7 +110,7 @@ class Player:
         self.sprite.x, self.sprite.y = pos
 
     def ground(self):
-        return self.sprite.y == 200 + self.radius
+        return self.sprite.y == 200
 
 
 class Obstacle:

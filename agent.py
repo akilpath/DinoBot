@@ -41,13 +41,13 @@ class Agent:
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(32),
+            tf.keras.layers.Dense(32, input_shape=(1,7)),
             tf.keras.layers.Dense(128, activation= "relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(32),
+            tf.keras.layers.Dense(32, input_shape=(1,7)),
             tf.keras.layers.Dense(128, activation="relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])

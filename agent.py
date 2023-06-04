@@ -9,7 +9,7 @@ class Agent:
     def __init__(self):
         self.modelNetwork, self.targetNetwork = self.initializeModels()
         self.gamma = 0.9
-        self.epsilon = 0.7
+        self.epsilon = 0.3
         self.decayRate = 0.90
         self.batchSize = 32
         self.epsilonMin = 0.0001
@@ -79,8 +79,3 @@ class Agent:
 
     def saveModel(self):
         tf.saved_model.save(self.modelNetwork, "./")
-# converter = tf.lite.TFLiteConverter.from_saved_model("./")
-# tfLiteModel = converter.convert()
-# with open('model20230415.tflite', 'wb') as file:
-#     file.write(tfLiteModel)
-# print('done')

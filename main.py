@@ -13,8 +13,6 @@ from game import Game
 EPISODE_COUNT = 2000
 COPY_COUNT = 30
 pyautogui.PAUSE = 0.001
-x = np.zeros(dtype=int, shape=EPISODE_COUNT)
-y = np.zeros(dtype=float, shape=EPISODE_COUNT)
 fig, ax = plot.subplots()
 
 
@@ -73,21 +71,24 @@ def main():
 
         lasted = timer.getElapsed()
         print(f"Time survived: {lasted}")
-        x[episode-1] = episode
-        y[episode-1] = lasted
+        # x[episode-1] = episode
+        # y[episode-1] = lasted
         agent.train()
         agent.decayEpsilon()
         if episode % COPY_COUNT == 0:
             print("Weights copied")
             agent.copyWeights()
         time.sleep(0.25)
-    ax.plot(x, y)
-    plot.savefig("./figures/test2.png")
+    #ax.plot(x, y)
+    #plot.savefig("./figures/test2.png")
 
 
 def test():
+    x = []
+    y = []
     game = Game()
     game.run()
+    ax.plot(x, y)
     # window = pyglet.window.Window()
     # label = pyglet.text.Label('Hello, world',
     #                           font_name='Times New Roman',

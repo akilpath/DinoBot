@@ -1,9 +1,13 @@
 import time
 from collections import deque
 
+import numpy as np
 import pyglet
 import random
 import numpy
+import matplotlib.pyplot as plot
+
+from agent import Agent
 from timer import Timer
 
 
@@ -16,15 +20,20 @@ class Game(pyglet.window.Window):
         self.width = 1500
         self.height = 700
         self.scoreLbl = pyglet.text.Label('Score',
-                                       font_name='Times New Roman',
-                                       font_size=36,
-                                       x=self.width // 2, y=550,
-                                       anchor_x='center', anchor_y='center', batch=self.batch)
+                                          font_name='Times New Roman',
+                                          font_size=36,
+                                          x=self.width // 2, y=550,
+                                          anchor_x='center', anchor_y='center', batch=self.batch)
+        self.highScoreLbl = pyglet.text.Label("High Score",
+                                              font_name='Times New Roman',
+                                              font_size=36,
+                                              x = 20, y = 630,
+                                              anchor_x="left", anchor_y="center", batch=self.batch)
         self.floor = pyglet.shapes.Rectangle(0, 0, 1500, 200, batch=self.batch)
         self.player = Player(self.batch)
 
         self.dt = 0
-        self.lastFrame = 0
+        self.lastFrameTime = 0
 
         self.obstacleSpawnTimer = Timer()
         self.gameTimer = Timer()
@@ -35,6 +44,21 @@ class Game(pyglet.window.Window):
                                                       color=(0, 255, 0, 255))
         self.obstacleBatch = pyglet.graphics.Batch()
 
+        self.score = 0
+        self.highScore = 0
+
+        self.agent = Agent()
+
+        self.lastState = None
+        self.reward = 0
+        self.lastAction = 0
+
+        self.xData = []
+        self.yData = []
+
+        self.fig, self.ax = plot.subplots()
+
+        self.MAXEPISODE = 2000
 
     def run(self):
         self.resetGame()
@@ -42,10 +66,12 @@ class Game(pyglet.window.Window):
 
     def resetGame(self):
         self.obstacles.clear()
-        self.lastFrame = time.time()
+        self.lastFrameTime = time.time()
         self.obstacleSpawnTimer.waitUntil(random.randint(1, 4))
         self.gameTimer.startTimer()
         self.gameEnded = False
+        self.score = 0
+        self.lastState = None
 
     def on_draw(self):
         if self.gameEnded:
@@ -55,8 +81,34 @@ class Game(pyglet.window.Window):
         self.playing()
 
     def gameOver(self):
+        if self.score > self.highScore:
+            self.highScore = self.score
+            self.highScoreLbl.text = f"High Score: {self.highScore:.2f}"
+
+        self.agent.episodeCount += 1
+        print(f"Episode: {self.agent.episodeCount}")
+        print(f"Agent Epsilon: {self.agent.epsilon}")
+        print(f"Score achieved: {self.score:.2f}")
+        if self.agent.episodeCount % 30 == 0:
+            self.agent.copyWeights()
+            print("Weights copied")
+
+        self.agent.train()
+        self.xData.append(self.agent.episodeCount)
+        self.yData.append(self.score)
+        if self.agent.episodeCount >= self.MAXEPISODE:
+            self.end()
+            return
+
+        self.agent.decayEpsilon()
+
+        self.resetGame()
         self.gameOverButton.draw()
-        pass
+
+    def end(self):
+        self.ax.plot(self.xData, self.yData)
+        plot.savefig("./figures/test3.png")
+        pyglet.app.exit()
 
     def playing(self):
 
@@ -65,29 +117,60 @@ class Game(pyglet.window.Window):
         if len(self.obstacles) > 1 and self.obstacles[0].x() < -300:
             self.obstacles.popleft()
 
-        thisFrame = time.time()
-        self.dt = thisFrame - self.lastFrame
-        self.lastFrame = thisFrame
+        thisFrameTime = time.time()
+        self.dt = thisFrameTime - self.lastFrameTime
+        self.lastFrameTime = thisFrameTime
 
         if self.obstacleSpawnTimer.getPassedEnd():
             self.obstacles.append(Obstacle(self.obstacleBatch))
             self.obstacleSpawnTimer.waitUntil(random.randint(1, 4))
         self.player.updatePos(self.dt)
-        self.batch.draw()
-
-        #self.obstacleBatch.draw()
         for obstacle in self.obstacles:
-            obstacle.draw(self.dt)
+            obstacle.update(self.dt, self.score)
 
-        self.getState()
+        self.batch.draw()
+        self.obstacleBatch.draw()
 
-        self.gameEnded = self.checkCollisions()
+        if self.score > 1:
+            state = self.getState()
+            self.gameEnded = self.checkCollisions()
+            if self.gameEnded:
+                reward = -10
+            else:
+                reward = 1
 
-        self.scoreLbl.text = str(int(self.gameTimer.getElapsed()))
+            if self.lastState is not None:
+                if reward == -10:
+                    for i in range(10):
+                        self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
+                else:
+                    self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
+
+
+            self.lastAction = int(self.agent.chooseAction(state))
+            self.performAction(self.lastAction)
+            self.lastState = state
+
+        self.score = self.gameTimer.getElapsed()
+        self.scoreLbl.text = f"{self.score:.2f}"
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == pyglet.window.key.SPACE and self.player.onGround():
+        if symbol == pyglet.window.key.SPACE:
+            self.jump()
+
+        if symbol == pyglet.window.key.S:
+            self.end()
+
+
+    def jump(self):
+        if self.player.onGround():
             self.player.yspeed = 1100
+
+    def performAction(self, action):
+        assert isinstance(action, int), "Not int"
+        if action == 0:
+            self.jump()
+
 
     def getState(self):
         data = [self.player.y()]
@@ -95,18 +178,22 @@ class Game(pyglet.window.Window):
         if len(self.obstacles) >= 2:
             obstacleData = [
                 self.obstacles[0].x(),
-                self.obstacles[0].height,
+                self.obstacles[0].xSpeed,
                 self.obstacles[0].width,
+                self.obstacles[0].height,
                 self.obstacles[1].x(),
-                self.obstacles[1].height,
+                self.obstacles[1].xSpeed,
                 self.obstacles[1].width,
+                self.obstacles[1].height,
             ]
         elif len(self.obstacles) == 1:
             obstacleData = [
                 self.obstacles[0].x(),
-                self.obstacles[0].height,
+                self.obstacles[0].xSpeed,
                 self.obstacles[0].width,
+                self.obstacles[0].height,
                 2000,
+                0,
                 0,
                 0,
             ]
@@ -115,11 +202,14 @@ class Game(pyglet.window.Window):
                 2000,
                 0,
                 0,
+                0,
                 2000,
                 0,
                 0,
+                0,
             ]
-        return numpy.array(data + obstacleData)
+        npData = numpy.array([data + obstacleData])
+        return npData
 
     def checkCollisions(self):
         vertices = (
@@ -146,7 +236,7 @@ class Game(pyglet.window.Window):
 class Player:
     def __init__(self, batch):
         self.width = 50
-        self.sprite = pyglet.shapes.Rectangle(80, 200, self.width, self.width, color=(0, 0, 255, 255), batch = batch)
+        self.sprite = pyglet.shapes.Rectangle(80, 200, self.width, self.width, color=(0, 0, 255, 255), batch=batch)
 
         self.yspeed = 0
         # acceleration due to gravity
@@ -180,26 +270,23 @@ class Player:
 class Obstacle:
 
     def __init__(self, batch):
-        self.height = random.randint(50, 150)
-        self.width = random.randint(50, 100)
+        self.height = random.randint(50, 140)
+        self.width = random.randint(50, 90)
         self.sprite = pyglet.shapes.Rectangle(1700, 200, self.width, self.height, color=(255, 0, 0, 255), batch=batch)
 
         self.xSpeed = 500
         self.timer = Timer()
         self.timer.startTimer()
 
-    def draw(self, dt):
-        self.sprite.draw()
-        self.updatePos(dt)
+    def update(self, dt, score):
+        self.xSpeed = int(500 + score)
+        self.sprite.x -= int(dt*self.xSpeed)
 
     def x(self):
         return self.sprite.x
 
     def y(self):
         return self.sprite.y
-
-    def updatePos(self, dt):
-        self.sprite.x -= int(self.xSpeed * dt)
 
     def get_pos(self):
         return self.sprite.x, self.sprite.y

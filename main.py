@@ -6,9 +6,11 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import time
+import tracemalloc
 from timer import Timer
 from agent import Agent
 from game import Game
+
 
 EPISODE_COUNT = 2000
 COPY_COUNT = 30
@@ -84,11 +86,8 @@ def main():
 
 
 def test():
-    x = []
-    y = []
     game = Game()
     game.run()
-    ax.plot(x, y)
     # window = pyglet.window.Window()
     # label = pyglet.text.Label('Hello, world',
     #                           font_name='Times New Roman',

@@ -61,11 +61,11 @@ class Game(pyglet.window.Window):
         self.fig, self.ax = plot.subplots()
 
         self.MAXEPISODE = 1000
+        self.COPYCOUNT = 40
 
     def run(self):
         self.resetGame()
         pyglet.app.run()
-        tracemalloc.start()
 
     def resetGame(self):
         self.obstacles.clear()
@@ -84,7 +84,6 @@ class Game(pyglet.window.Window):
         self.playing()
 
     def gameOver(self):
-        print(tracemalloc.get_traced_memory())
         if self.score > self.highScore:
             self.highScore = self.score
             self.highScoreLbl.text = f"High Score: {self.highScore:.2f}"
@@ -93,7 +92,7 @@ class Game(pyglet.window.Window):
         print(f"Episode: {self.agent.episodeCount}")
         print(f"Agent Epsilon: {self.agent.epsilon}")
         print(f"Score achieved: {self.score:.2f}")
-        if self.agent.episodeCount % 30 == 0:
+        if self.agent.episodeCount % self.COPYCOUNT == 0:
             self.agent.copyWeights()
             print("Weights copied")
 
@@ -111,9 +110,7 @@ class Game(pyglet.window.Window):
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
-        plot.savefig("./figures/test3.png")
-        print(tracemalloc.get_traced_memory())
-        tracemalloc.stop()
+        plot.savefig("./figures/test4.png")
         pyglet.app.exit()
 
     def playing(self):

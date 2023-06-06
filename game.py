@@ -60,7 +60,7 @@ class Game(pyglet.window.Window):
 
         self.fig, self.ax = plot.subplots()
 
-        self.MAXEPISODE = 1000
+        self.MAXEPISODE = 500
         self.COPYCOUNT = 40
 
     def run(self):
@@ -110,7 +110,7 @@ class Game(pyglet.window.Window):
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
-        plot.savefig("./figures/test4.png")
+        plot.savefig("./figures/test5.png")
         pyglet.app.exit()
 
     def playing(self):
@@ -170,7 +170,6 @@ class Game(pyglet.window.Window):
             self.player.yspeed = 1100
 
     def performAction(self, action):
-        assert isinstance(action, int), "Not int"
         if action == 0:
             self.jump()
 

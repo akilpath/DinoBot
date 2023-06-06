@@ -44,17 +44,20 @@ class Agent:
                 predictedQ[0, action] = reward + self.gamma * np.max(targetQ, axis=1)
             self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
+        print(f"Memory length: {len(self.memory)}")
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
             tf.keras.layers.Dense(32, input_dim=9),
-            tf.keras.layers.Dense(128, activation="leaky_relu"),
+            tf.keras.layers.Dense(64, activation="leaky_relu"),
+            tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
             tf.keras.layers.Dense(32, input_dim=9),
-            tf.keras.layers.Dense(128, activation="leaky_relu"),
+            tf.keras.layers.Dense(64, activation="leaky_relu"),
+            tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
 

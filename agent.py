@@ -11,7 +11,7 @@ class Agent:
         self.gamma = 0.9
         self.epsilon = 0.3
         self.decayRate = 0.90
-        self.batchSize = 32
+        self.batchSize = 64
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
@@ -23,7 +23,7 @@ class Agent:
         self.epsilon *= self.decayRate
 
     def saveExperience(self, state, action, reward, nextState):
-        self.memory.append((state, action, reward, nextState))
+        self.memory.appendleft((state, action, reward, nextState))
         pass
 
     def copyWeights(self):
@@ -48,26 +48,26 @@ class Agent:
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(32, input_dim=9),
-            tf.keras.layers.Dense(64, activation="leaky_relu"),
+            tf.keras.layers.Dense(64, input_dim=9),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
+            tf.keras.layers.Dense(8, activation="leaky_relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(32, input_dim=9),
-            tf.keras.layers.Dense(64, activation="leaky_relu"),
+            tf.keras.layers.Dense(64, input_dim=9),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
+            tf.keras.layers.Dense(8, activation="leaky_relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
 
         targetNetwork.set_weights(modelNetwork.get_weights())
 
         modelNetwork.compile(optimizer='adam',
-                             loss="mse",
+                             loss="huber",
                              metrics=["accuracy"])
         targetNetwork.compile(optimizer='adam',
-                              loss="mse",
+                              loss="huber",
                               metrics=["accuracy"])
 
         return modelNetwork, targetNetwork
@@ -76,8 +76,8 @@ class Agent:
         if np.random.random() < self.epsilon:
             return np.random.randint(3)
 
-        output = self.modelNetwork.predict(state,verbose=0)
-        actionToTake = np.argmax(output,axis=1)
+        output = self.modelNetwork.predict(state, verbose=0)
+        actionToTake = np.argmax(output, axis=1)
         return actionToTake[0]
 
     def saveModel(self):

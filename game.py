@@ -77,6 +77,10 @@ class Game(pyglet.window.Window):
         self.lastState = None
 
     def on_draw(self):
+        if self.agent.episodeCount > self.MAXEPISODE:
+            self.end()
+            return
+
         if self.gameEnded:
             self.gameOver()
             return
@@ -84,6 +88,10 @@ class Game(pyglet.window.Window):
         self.playing()
 
     def gameOver(self):
+        if self.agent.episodeCount > self.MAXEPISODE:
+            self.end()
+            return
+
         if self.score > self.highScore:
             self.highScore = self.score
             self.highScoreLbl.text = f"High Score: {self.highScore:.2f}"
@@ -99,9 +107,6 @@ class Game(pyglet.window.Window):
         self.agent.train()
         self.xData.append(self.agent.episodeCount)
         self.yData.append(self.score)
-        if self.agent.episodeCount >= self.MAXEPISODE:
-            self.end()
-            return
 
         self.agent.decayEpsilon()
 
@@ -110,7 +115,7 @@ class Game(pyglet.window.Window):
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
-        plot.savefig("./figures/test5.png")
+        plot.savefig("./figures/test6.png")
         pyglet.app.exit()
 
     def playing(self):
@@ -144,7 +149,7 @@ class Game(pyglet.window.Window):
 
             if self.lastState is not None:
                 if reward == -10:
-                    for i in range(10):
+                    for i in range(5):
                         self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
                 else:
                     self.agent.saveExperience(self.lastState, self.lastAction, reward, state)

@@ -30,7 +30,6 @@ def doAction(action):
 
 def main():
     print("Starting")
-    time.sleep(4)
     agent = Agent()
     stepCount = 0
 
@@ -43,8 +42,6 @@ def main():
         timer.startTimer()
         playing = True
         state = None
-        # delay of 2 seconds prevents a.i from logging information at the beginning of the game.
-        time.sleep(2)
         while playing:
             stepCount += 1
             if state is None:

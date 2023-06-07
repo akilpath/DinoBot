@@ -15,7 +15,7 @@ class Agent:
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
-        self.memory = deque(maxlen=4000)
+        self.memory = deque(maxlen=100000)
 
     def decayEpsilon(self):
         if self.epsilon <= self.epsilonMin:
@@ -48,14 +48,14 @@ class Agent:
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, input_dim=9),
+            tf.keras.layers.Dense(64, input_dim=5),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(8, activation="leaky_relu"),
             tf.keras.layers.Dense(3, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, input_dim=9),
+            tf.keras.layers.Dense(64, input_dim=5),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(8, activation="leaky_relu"),
             tf.keras.layers.Dense(3, activation="linear")

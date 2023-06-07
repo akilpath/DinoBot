@@ -10,7 +10,7 @@ import matplotlib.pyplot as plot
 from agent import Agent
 from timer import Timer
 from sprites import Player, Obstacle
-
+from sklearn import preprocessing
 import tracemalloc
 
 class Game(pyglet.window.Window):
@@ -122,7 +122,7 @@ class Game(pyglet.window.Window):
 
         self.clear()
 
-        if len(self.obstacles) > 1 and self.obstacles[0].x() < -300:
+        if len(self.obstacles) > 1 and self.obstacles[0].x() < self.player.x() - self.obstacles[0].width:
             self.obstacles.popleft()
 
         thisFrameTime = time.time()
@@ -180,29 +180,15 @@ class Game(pyglet.window.Window):
 
 
     def getState(self):
+
         data = [self.player.y()]
 
-        if len(self.obstacles) >= 2:
+        if len(self.obstacles) >= 1:
             obstacleData = [
                 self.obstacles[0].x(),
-                self.obstacles[0].xSpeed,
                 self.obstacles[0].width,
                 self.obstacles[0].height,
-                self.obstacles[1].x(),
-                self.obstacles[1].xSpeed,
-                self.obstacles[1].width,
-                self.obstacles[1].height,
-            ]
-        elif len(self.obstacles) == 1:
-            obstacleData = [
-                self.obstacles[0].x(),
                 self.obstacles[0].xSpeed,
-                self.obstacles[0].width,
-                self.obstacles[0].height,
-                2000,
-                0,
-                0,
-                0,
             ]
         else:
             obstacleData = [
@@ -210,12 +196,9 @@ class Game(pyglet.window.Window):
                 0,
                 0,
                 0,
-                2000,
-                0,
-                0,
-                0,
             ]
         npData = numpy.array([data + obstacleData])
+        npData = preprocessing.normalize(npData)
         return npData
 
     def checkCollisions(self):

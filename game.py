@@ -4,7 +4,6 @@ from collections import deque
 import numpy as np
 import pyglet
 import random
-import numpy
 import matplotlib.pyplot as plot
 
 from agent import Agent
@@ -44,7 +43,6 @@ class Game(pyglet.window.Window):
 
         self.gameOverButton = pyglet.shapes.Rectangle(self.width // 2, self.height // 2, 100, 100,
                                                       color=(0, 255, 0, 255))
-        self.obstacleBatch = pyglet.graphics.Batch()
 
         self.score = 0
         self.highScore = 0
@@ -60,7 +58,7 @@ class Game(pyglet.window.Window):
 
         self.fig, self.ax = plot.subplots()
 
-        self.MAXEPISODE = 500
+        self.MAXEPISODE = 200
         self.COPYCOUNT = 40
 
     def run(self):
@@ -115,14 +113,14 @@ class Game(pyglet.window.Window):
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
-        plot.savefig("./figures/test6.png")
+        plot.savefig("./figures/test7.png")
         pyglet.app.exit()
 
     def playing(self):
 
         self.clear()
 
-        if len(self.obstacles) > 1 and self.obstacles[0].x() < self.player.x() - self.obstacles[0].width:
+        if len(self.obstacles) > 1 and self.obstacles[0].x() < 0 - self.obstacles[0].width:
             self.obstacles.popleft()
 
         thisFrameTime = time.time()
@@ -130,17 +128,17 @@ class Game(pyglet.window.Window):
         self.lastFrameTime = thisFrameTime
 
         if self.obstacleSpawnTimer.getPassedEnd():
-            self.obstacles.append(Obstacle(self.obstacleBatch))
+            self.obstacles.append(Obstacle())
             self.obstacleSpawnTimer.waitUntil(random.randint(1, 4))
+
         self.player.updatePos(self.dt)
         for obstacle in self.obstacles:
             obstacle.update(self.dt, self.score)
-
+            obstacle.sprite.draw()
         self.batch.draw()
-        self.obstacleBatch.draw()
 
-        if self.score > 2.5:
-            state = self.getState()
+        state = self.getState()
+        if self.score > 2.5 and state is not None:
             self.gameEnded = self.checkCollisions()
             if self.gameEnded:
                 reward = -10
@@ -153,7 +151,6 @@ class Game(pyglet.window.Window):
                         self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
                 else:
                     self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
-
 
             self.lastAction = int(self.agent.chooseAction(state))
             self.performAction(self.lastAction)
@@ -180,24 +177,19 @@ class Game(pyglet.window.Window):
 
 
     def getState(self):
+        if len(self.obstacles) < 1:
+            return None
 
-        data = [self.player.y()]
 
-        if len(self.obstacles) >= 1:
-            obstacleData = [
+        npData = np.array([
+            [
+                self.player.y(),
                 self.obstacles[0].x(),
                 self.obstacles[0].width,
                 self.obstacles[0].height,
-                self.obstacles[0].xSpeed,
+                self.obstacles[0].xSpeed
             ]
-        else:
-            obstacleData = [
-                2000,
-                0,
-                0,
-                0,
-            ]
-        npData = numpy.array([data + obstacleData])
+        ])
         npData = preprocessing.normalize(npData)
         return npData
 

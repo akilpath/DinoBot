@@ -3,7 +3,7 @@ from collections import deque
 import tensorflow as tf
 import numpy as np
 import random
-
+import psutil
 
 class Agent:
     def __init__(self):
@@ -45,6 +45,7 @@ class Agent:
             self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
         print(f"Memory length: {len(self.memory)}")
+        print(f"Memory Usage: {psutil.virtual_memory()[3]/float((pow(10,9)))}")
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([

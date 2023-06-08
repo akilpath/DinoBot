@@ -40,17 +40,17 @@ class Player:
 
 class Obstacle:
 
-    def __init__(self, batch):
+    def __init__(self):
         self.height = random.randint(50, 140)
         self.width = random.randint(50, 90)
-        self.sprite = pyglet.shapes.Rectangle(1700, 200, self.width, self.height, color=(255, 0, 0, 255), batch=batch)
+        self.sprite = pyglet.shapes.Rectangle(1700, 200, self.width, self.height, color=(255, 0, 0, 255))
 
         self.xSpeed = 500
         self.timer = Timer()
         self.timer.startTimer()
 
     def update(self, dt, score):
-        self.xSpeed = int(500 + score)
+        self.xSpeed = int(500 + score*3)
         self.sprite.x -= int(dt*self.xSpeed)
 
     def x(self):

@@ -58,11 +58,12 @@ class Game(pyglet.window.Window):
 
         self.fig, self.ax = plot.subplots()
 
-        self.MAXEPISODE = 200
+        self.MAXEPISODE = 150
         self.COPYCOUNT = 40
 
     def run(self):
         self.resetGame()
+        pyglet.clock.schedule(self.aiUpdate)
         pyglet.app.run()
 
     def resetGame(self):
@@ -84,6 +85,29 @@ class Game(pyglet.window.Window):
             return
 
         self.playing()
+
+    def aiUpdate(self, dt):
+        if self.gameEnded:
+            return
+
+        state = self.getState()
+        if self.score > 2.5 and state is not None:
+            self.gameEnded = self.checkCollisions()
+            if self.gameEnded:
+                reward = -10
+            else:
+                reward = 1
+
+            if self.lastState is not None:
+                if reward == -10:
+                    for i in range(5):
+                        self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
+                else:
+                    self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
+
+            self.lastAction = int(self.agent.chooseAction(state))
+            self.performAction(self.lastAction)
+            self.lastState = state
 
     def gameOver(self):
         if self.agent.episodeCount > self.MAXEPISODE:
@@ -137,24 +161,12 @@ class Game(pyglet.window.Window):
             obstacle.sprite.draw()
         self.batch.draw()
 
-        state = self.getState()
-        if self.score > 2.5 and state is not None:
-            self.gameEnded = self.checkCollisions()
-            if self.gameEnded:
-                reward = -10
-            else:
-                reward = 1
-
-            if self.lastState is not None:
-                if reward == -10:
-                    for i in range(5):
-                        self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
-                else:
-                    self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
-
-            self.lastAction = int(self.agent.chooseAction(state))
-            self.performAction(self.lastAction)
-            self.lastState = state
+        if self.checkCollisions():
+            self.gameEnded = True
+            state = self.getState()
+            if self.lastState is not None and state is not None:
+                for i in range(5):
+                    self.agent.saveExperience(self.lastState, self.lastAction, -10, state)
 
         self.score = self.gameTimer.getElapsed()
         self.scoreLbl.text = f"{self.score:.2f}"

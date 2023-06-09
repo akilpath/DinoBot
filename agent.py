@@ -15,12 +15,16 @@ class Agent:
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
-        self.memory = deque(maxlen=100000)
+        self.memory = deque(maxlen=50000)
+        self.tempExperience = deque(maxlen=120)
 
     def decayEpsilon(self):
         if self.epsilon <= self.epsilonMin:
             return
         self.epsilon *= self.decayRate
+
+    def saveTempExperience(self, state, action, reward, nextState):
+        self.tempExperience.appendleft((state, action, reward, nextState))
 
     def saveExperience(self, state, action, reward, nextState):
         self.memory.appendleft((state, action, reward, nextState))

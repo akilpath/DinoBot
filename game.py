@@ -58,12 +58,13 @@ class Game(pyglet.window.Window):
 
         self.fig, self.ax = plot.subplots()
 
-        self.MAXEPISODE = 150
+        self.MAXEPISODE = 100
         self.COPYCOUNT = 40
+        self.saveAiCount = 0
 
     def run(self):
         self.resetGame()
-        pyglet.clock.schedule(self.aiUpdate)
+        pyglet.clock.schedule_interval(self.aiUpdate, interval=1./30.)
         pyglet.app.run()
 
     def resetGame(self):
@@ -100,10 +101,10 @@ class Game(pyglet.window.Window):
 
             if self.lastState is not None:
                 if reward == -10:
-                    for i in range(5):
-                        self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
+                    self.agent.saveTempExperience(self.lastState, self.lastAction, reward, state)
+                    self.saveAiCount += 1
                 else:
-                    self.agent.saveExperience(self.lastState, self.lastAction, reward, state)
+                    self.agent.saveTempExperience(self.lastState, self.lastAction, reward, state)
 
             self.lastAction = int(self.agent.chooseAction(state))
             self.performAction(self.lastAction)
@@ -125,7 +126,7 @@ class Game(pyglet.window.Window):
         if self.agent.episodeCount % self.COPYCOUNT == 0:
             self.agent.copyWeights()
             print("Weights copied")
-
+        self.agent.copyExperience()
         self.agent.train()
         self.xData.append(self.agent.episodeCount)
         self.yData.append(self.score)
@@ -137,7 +138,8 @@ class Game(pyglet.window.Window):
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
-        plot.savefig("./figures/test7.png")
+        plot.savefig("./figures/test8tempexperience.png")
+        print(self.saveAiCount)
         pyglet.app.exit()
 
     def playing(self):
@@ -165,8 +167,7 @@ class Game(pyglet.window.Window):
             self.gameEnded = True
             state = self.getState()
             if self.lastState is not None and state is not None:
-                for i in range(5):
-                    self.agent.saveExperience(self.lastState, self.lastAction, -10, state)
+                self.agent.saveTempExperience(self.lastState, self.lastAction, -10, state)
 
         self.score = self.gameTimer.getElapsed()
         self.scoreLbl.text = f"{self.score:.2f}"

@@ -7,6 +7,8 @@
 # import tracemalloc
 # from timer import Timer
 # from agent import Agent
+from collections import deque
+
 from game import Game
 import psutil
 

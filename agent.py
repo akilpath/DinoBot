@@ -16,7 +16,7 @@ class Agent:
         self.episodeCount = 0
 
         self.memory = deque(maxlen=50000)
-        self.tempExperience = deque(maxlen=120)
+        self.tempExperience = deque(maxlen=450)
 
     def decayEpsilon(self):
         if self.epsilon <= self.epsilonMin:
@@ -26,9 +26,8 @@ class Agent:
     def saveTempExperience(self, state, action, reward, nextState):
         self.tempExperience.appendleft((state, action, reward, nextState))
 
-    def saveExperience(self, state, action, reward, nextState):
-        self.memory.appendleft((state, action, reward, nextState))
-        pass
+    def copyExperience(self):
+        self.memory += self.tempExperience
 
     def copyWeights(self):
         self.targetNetwork.set_weights(self.modelNetwork.get_weights())

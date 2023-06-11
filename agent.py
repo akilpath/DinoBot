@@ -5,9 +5,14 @@ import numpy as np
 import random
 import psutil
 
+
 class Agent:
-    def __init__(self):
-        self.modelNetwork, self.targetNetwork = self.initializeModels()
+    def __init__(self, conv=False, frameDim = 0, frameCount = 0):
+        if conv:
+            self.modelNetwork, self.targetNetwork = self.initializeConvModels(frameDim, frameCount)
+        else:
+            self.modelNetwork, self.targetNetwork = self.initializeModels()
+        self.copyWeights()
         self.gamma = 0.9
         self.epsilon = 0.3
         self.decayRate = 0.90
@@ -15,7 +20,7 @@ class Agent:
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
-        self.memory = deque(maxlen=50000)
+        self.memory = deque(maxlen=10000)
         self.tempExperience = deque(maxlen=450)
 
     def decayEpsilon(self):
@@ -48,7 +53,7 @@ class Agent:
             self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
         print(f"Memory length: {len(self.memory)}")
-        print(f"Memory Usage: {psutil.virtual_memory()[3]/float((pow(10,9)))}")
+        print(f"Memory Usage: {psutil.virtual_memory()[3] / float((pow(10, 9)))}")
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
@@ -65,8 +70,6 @@ class Agent:
             tf.keras.layers.Dense(3, activation="linear")
         ])
 
-        targetNetwork.set_weights(modelNetwork.get_weights())
-
         modelNetwork.compile(optimizer='adam',
                              loss="huber",
                              metrics=["accuracy"])
@@ -75,6 +78,37 @@ class Agent:
                               metrics=["accuracy"])
 
         return modelNetwork, targetNetwork
+
+    def initializeConvModels(self, inputDim, FRAMECOUNT):
+        model = tf.keras.models.Sequential([
+            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputDim, inputDim, FRAMECOUNT)),
+            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
+            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
+            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(128, activation="leaky_relu"),
+            tf.keras.layers.Dense(64, activation="leaky_relu"),
+            tf.keras.layers.Dense(3, activation="linear")
+        ])
+
+        target = tf.keras.models.Sequential([
+            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputDim, inputDim, FRAMECOUNT)),
+            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
+            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
+            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(128, activation="leaky_relu"),
+            tf.keras.layers.Dense(64, activation="leaky_relu"),
+            tf.keras.layers.Dense(3, activation="linear")
+        ])
+        model.compile(optimizer='adam',
+                      loss="huber",
+                      metrics=["accuracy"])
+        target.compile(optimizer='adam',
+                       loss="huber",
+                       metrics=["accuracy"])
+
+        return model, target
 
     def chooseAction(self, state) -> int:
         if np.random.random() < self.epsilon:

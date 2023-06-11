@@ -1,3 +1,4 @@
+import math
 import time
 from collections import deque
 
@@ -60,7 +61,7 @@ class Game(pyglet.window.Window):
 
         self.MAXEPISODE = 100
         self.COPYCOUNT = 40
-        self.saveAiCount = 0
+        self.botPlaying = False
 
     def run(self):
         self.resetGame()
@@ -77,40 +78,35 @@ class Game(pyglet.window.Window):
         self.lastState = None
 
     def on_draw(self):
-        if self.agent.episodeCount > self.MAXEPISODE:
-            self.end()
-            return
+        if self.botPlaying:
+            if self.agent.episodeCount > self.MAXEPISODE:
+                self.end()
+                return
 
-        if self.gameEnded:
-            self.gameOver()
-            return
-
+            if self.gameEnded:
+                self.gameOverAi()
+                return
+        else:
+            if self.gameEnded:
+                self.gameOver()
+                return
         self.playing()
 
     def aiUpdate(self, dt):
-        if self.gameEnded:
+        if self.gameEnded or not self.botPlaying:
             return
 
         state = self.getState()
         if self.score > 2.5 and state is not None:
             self.gameEnded = self.checkCollisions()
-            if self.gameEnded:
-                reward = -10
-            else:
-                reward = 1
-
             if self.lastState is not None:
-                if reward == -10:
-                    self.agent.saveTempExperience(self.lastState, self.lastAction, reward, state)
-                    self.saveAiCount += 1
-                else:
-                    self.agent.saveTempExperience(self.lastState, self.lastAction, reward, state)
+                self.agent.saveTempExperience(self.lastState, self.lastAction, 1, state)
 
             self.lastAction = int(self.agent.chooseAction(state))
             self.performAction(self.lastAction)
             self.lastState = state
 
-    def gameOver(self):
+    def gameOverAi(self):
         if self.agent.episodeCount > self.MAXEPISODE:
             self.end()
             return
@@ -134,19 +130,24 @@ class Game(pyglet.window.Window):
         self.agent.decayEpsilon()
 
         self.resetGame()
+
+    def gameOver(self):
+        if self.score > self.highScore:
+            self.highScore = self.score
+            self.highScoreLbl.text = f"High Score: {self.highScore:.2f}"
+
         self.gameOverButton.draw()
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
         plot.savefig("./figures/test8tempexperience.png")
-        print(self.saveAiCount)
         pyglet.app.exit()
 
     def playing(self):
 
         self.clear()
 
-        if len(self.obstacles) > 1 and self.obstacles[0].x() < 0 - self.obstacles[0].width:
+        if len(self.obstacles) >= 1 and self.obstacles[0].x() < 0 - self.obstacles[0].width:
             self.obstacles.popleft()
 
         thisFrameTime = time.time()
@@ -158,10 +159,17 @@ class Game(pyglet.window.Window):
             self.obstacleSpawnTimer.waitUntil(random.randint(1, 4))
 
         self.player.updatePos(self.dt)
+        if self.player.onGround() and self.player.state == 1 and self.player.stateCount > 2:
+            self.player.setState(0)
+        else:
+            self.player.stateCount += 1
+
         for obstacle in self.obstacles:
             obstacle.update(self.dt, self.score)
             obstacle.sprite.draw()
+
         self.batch.draw()
+
 
         if self.checkCollisions():
             self.gameEnded = True
@@ -174,10 +182,16 @@ class Game(pyglet.window.Window):
 
     def on_key_press(self, symbol, modifiers):
         if symbol == pyglet.window.key.SPACE:
-            self.jump()
+            self.player.setState(1)
+        elif symbol == pyglet.window.key.DOWN:
+            self.player.setState(2)
 
         if symbol == pyglet.window.key.S:
             self.end()
+
+    def on_key_release(self, symbol, modifiers):
+        if symbol == pyglet.window.key.DOWN:
+            self.player.setState(0)
 
 
     def jump(self):
@@ -185,8 +199,9 @@ class Game(pyglet.window.Window):
             self.player.yspeed = 1100
 
     def performAction(self, action):
-        if action == 0:
-            self.jump()
+        self.player.setState(action)
+
+
 
 
     def getState(self):
@@ -207,19 +222,18 @@ class Game(pyglet.window.Window):
         return npData
 
     def checkCollisions(self):
-        vertices = (
-            (self.player.x(), self.player.y()),
-            (self.player.x() + self.player.width, self.player.y()),
-            (self.player.x(), self.player.y() + self.player.width),
-            (self.player.x() + self.player.width, self.player.y() + self.player.width))
+        pX = self.player.hitbox.x
+        pY = self.player.hitbox.y
+        pR = self.player.hitbox.radius
         for obstacle in self.obstacles:
-            for vertex in vertices:
-                x, y = vertex
-                inXRange = (obstacle.x() <= x <= obstacle.x() + obstacle.width)
-                inYRange = (obstacle.y() <= y <= obstacle.y() + obstacle.height)
-                if inXRange and inYRange:
-                    return True
+            closestX = self.clamp(pX, obstacle.x(), obstacle.x() + obstacle.width)
+            closestY = self.clamp(pY, obstacle.y(), obstacle.y() + obstacle.height)
+            if (pX - closestX)**2 + (pY - closestY)**2 < pR**2:
+                return True
         return False
+
+    def clamp(self, value, lower, upper):
+        return max(min(upper, value), lower)
 
     def on_mouse_release(self, x, y, button, modifiers):
         if self.gameEnded:

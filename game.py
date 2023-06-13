@@ -48,7 +48,13 @@ class Game(pyglet.window.Window):
         self.score = 0
         self.highScore = 0
 
-        self.agent = Agent()
+        self.MAXEPISODE = 150
+        self.COPYCOUNT = 30
+        self.STATESIZE = 6
+        self.ACTIONSIZE = 3
+        self.botPlaying = True
+        if self.botPlaying:
+            self.agent = Agent(self.STATESIZE, self.ACTIONSIZE)
 
         self.lastState = None
         self.reward = 0
@@ -58,10 +64,8 @@ class Game(pyglet.window.Window):
         self.yData = []
 
         self.fig, self.ax = plot.subplots()
+        self.figPath = "./figures/test9.png"
 
-        self.MAXEPISODE = 100
-        self.COPYCOUNT = 40
-        self.botPlaying = False
 
     def run(self):
         self.resetGame()
@@ -100,7 +104,7 @@ class Game(pyglet.window.Window):
         if self.score > 2.5 and state is not None:
             self.gameEnded = self.checkCollisions()
             if self.lastState is not None:
-                self.agent.saveTempExperience(self.lastState, self.lastAction, 1, state)
+                self.agent.saveTempExperience(self.lastState, self.lastAction, 2, state)
 
             self.lastAction = int(self.agent.chooseAction(state))
             self.performAction(self.lastAction)
@@ -140,7 +144,7 @@ class Game(pyglet.window.Window):
 
     def end(self):
         self.ax.plot(self.xData, self.yData)
-        plot.savefig("./figures/test8tempexperience.png")
+        plot.savefig(self.figPath)
         pyglet.app.exit()
 
     def playing(self):
@@ -187,7 +191,8 @@ class Game(pyglet.window.Window):
             self.player.setState(2)
 
         if symbol == pyglet.window.key.S:
-            self.end()
+            self.ax.plot(self.xData, self.yData)
+            plot.savefig(self.figPath)
 
     def on_key_release(self, symbol, modifiers):
         if symbol == pyglet.window.key.DOWN:
@@ -201,18 +206,15 @@ class Game(pyglet.window.Window):
     def performAction(self, action):
         self.player.setState(action)
 
-
-
-
     def getState(self):
         if len(self.obstacles) < 1:
             return None
 
-
         npData = np.array([
             [
-                self.player.y(),
+                self.player.hitbox.y,
                 self.obstacles[0].x(),
+                self.obstacles[0].y(),
                 self.obstacles[0].width,
                 self.obstacles[0].height,
                 self.obstacles[0].xSpeed

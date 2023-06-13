@@ -6,14 +6,20 @@ import random
 import psutil
 
 class Agent:
-    def __init__(self):
+    def __init__(self, stateSize, actionSize):
+        self.ACTIONSIZE = actionSize
+        self.STATESIZE = stateSize
+
         self.modelNetwork, self.targetNetwork = self.initializeModels()
-        self.gamma = 0.9
-        self.epsilon = 0.3
+        self.copyWeights()
+        self.gamma = 0.95
+        self.epsilon = 0.5
         self.decayRate = 0.90
-        self.batchSize = 64
+        self.batchSize = 128
         self.epsilonMin = 0.0001
         self.episodeCount = 0
+
+
 
         self.memory = deque(maxlen=50000)
         self.tempExperience = deque(maxlen=450)
@@ -33,10 +39,10 @@ class Agent:
         self.targetNetwork.set_weights(self.modelNetwork.get_weights())
 
     def train(self):
-        if self.batchSize > len(self.memory):
-            batch = self.memory
-        else:
-            batch = random.sample(self.memory, self.batchSize)
+        if len(self.memory) < self.batchSize: return
+
+        batch = random.sample(self.memory, self.batchSize)
+
         for state, action, reward, nextState in batch:
             predictedQ = self.modelNetwork.predict(state, verbose=0)
 
@@ -48,24 +54,22 @@ class Agent:
             self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
         print(f"Memory length: {len(self.memory)}")
-        print(f"Memory Usage: {psutil.virtual_memory()[3]/float((pow(10,9)))}")
+        print(f"Computer Memory Usage: {psutil.virtual_memory()[3]/float((pow(10,9)))}")
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, input_dim=5),
+            tf.keras.layers.Dense(64, input_dim=self.STATESIZE),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(8, activation="leaky_relu"),
-            tf.keras.layers.Dense(3, activation="linear")
+            tf.keras.layers.Dense(self.ACTIONSIZE, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, input_dim=5),
+            tf.keras.layers.Dense(64, input_dim=self.STATESIZE),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(8, activation="leaky_relu"),
-            tf.keras.layers.Dense(3, activation="linear")
+            tf.keras.layers.Dense(self.ACTIONSIZE, activation="linear")
         ])
-
-        targetNetwork.set_weights(modelNetwork.get_weights())
 
         modelNetwork.compile(optimizer='adam',
                              loss="huber",

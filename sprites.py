@@ -90,7 +90,7 @@ class Obstacle:
             self.sprite = pyglet.shapes.Rectangle(1700, 200, self.width, self.height, color=(255, 0, 0, 255))
         else:
             self.width = 70
-            self.height = 40
+            self.height = 70
             self.sprite = pyglet.shapes.Rectangle(1700, random.randint(230, 350), self.width, self.height, color=(255, 0, 0, 255))
 
         self.XSPEEDSTART = 600
@@ -99,7 +99,7 @@ class Obstacle:
 
     def update(self, dt, score):
         self.xSpeed = int(self.XSPEEDSTART + score*3)
-        self.sprite.x -= int(dt*self.xSpeed)
+        self.sprite.x -= int(2*dt*self.xSpeed)
 
     def x(self):
         return self.sprite.x

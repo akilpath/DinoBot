@@ -4,6 +4,8 @@ import tensorflow as tf
 import numpy as np
 import random
 import psutil
+from keras_visualizer import visualizer
+
 
 class Agent:
     def __init__(self, stateSize, actionSize):
@@ -15,11 +17,9 @@ class Agent:
         self.gamma = 0.95
         self.epsilon = 0.5
         self.decayRate = 0.90
-        self.batchSize = 128
+        self.batchSize = 64
         self.epsilonMin = 0.0001
         self.episodeCount = 0
-
-
 
         self.memory = deque(maxlen=50000)
         self.tempExperience = deque(maxlen=450)
@@ -39,7 +39,8 @@ class Agent:
         self.targetNetwork.set_weights(self.modelNetwork.get_weights())
 
     def train(self):
-        if len(self.memory) < self.batchSize: return
+        if len(self.memory) < self.batchSize:
+            return
 
         batch = random.sample(self.memory, self.batchSize)
 
@@ -54,7 +55,7 @@ class Agent:
             self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
         print(f"Memory length: {len(self.memory)}")
-        print(f"Computer Memory Usage: {psutil.virtual_memory()[3]/float((pow(10,9)))}")
+        print(f"Computer Memory Usage: {psutil.virtual_memory()[3] / float((pow(10, 9)))}")
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
@@ -77,6 +78,8 @@ class Agent:
         targetNetwork.compile(optimizer='adam',
                               loss="huber",
                               metrics=["accuracy"])
+
+        #visualizer(modelNetwork, file_name="visualization", file_format="png", view=True)
 
         return modelNetwork, targetNetwork
 

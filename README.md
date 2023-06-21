@@ -19,8 +19,12 @@ the low memory in my computer, unable to handle a larger experience
 replay as well as my general understanding of the Q learning algorithm.
 In the end, I decided to replicate the game on my computer for now,
 passing game information directly as a state. Once the model performs
-well on my excellent game, I plan to go back to the original CNN and 
+well on my version of the game, I plan to go back to the original CNN and 
 apply my new knowledge and understanding. 
+
+#### Episode (X) vs Score (Y)
+![Experience Replay1](figures/test1.png "First Test")
+![Experience Replay1](figures/test1.png "Second Test")
 
 # Model 2:
 I decided to first build the game with just the jumping feature (no ducking).
@@ -28,6 +32,8 @@ This version of the game still had complexity, as the cacti in the original
 game was replaced by blocks with random heights and widths. The speed of the
 blocks would also increase proportional to the score. I recreated the model
 with an architecture as shown.
+
+![Experience Replay1](figures/modelTwoArchitecture.png "Test 7")
 
 Looking at the graph below, you can see the model did perform much better
 than the convolutional model with several spikes showing increase in performance.
@@ -44,6 +50,8 @@ The next changes I made was increasing the experience replay, normalizing
 the dataset, and removing useless information sent into the model. Applying
 these changes made a significant improvement to the data. 
 
-![Experience Replay1](figures/test7.png "dsafad")
+#### Experience replay of 100000 with normalized input
+![Experience Replay1](figures/test7.png "Test 7")
 
-![Experience Replay1](figures/test8.png "dsafa")
+#### Experience replay reduced to 50000 and only storing 15 seconds before death
+![Experience Replay1](figures/test8.png "Test 8")

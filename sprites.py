@@ -77,21 +77,20 @@ class Player:
     def onGround(self):
         return self.sprite.y == 200
 
-
 class Obstacle:
-
     def __init__(self):
-        self.height = random.randint(50, 140)
-        self.width = random.randint(50, 90)
         self.obstacleType = random.randint(0, 1)
+
         if self.obstacleType == 0:
             self.height = random.randint(50, 140)
             self.width = random.randint(50, 90)
             self.sprite = pyglet.shapes.Rectangle(1700, 200, self.width, self.height, color=(255, 0, 0, 255))
         else:
             self.width = 70
-            self.height = 70
-            self.sprite = pyglet.shapes.Rectangle(1700, random.randint(230, 350), self.width, self.height, color=(255, 0, 0, 255))
+            self.height = 500
+            y = random.randint(260, 350)
+            self.height = 500 - y
+            self.sprite = pyglet.shapes.Rectangle(1700, y, self.width, self.height, color=(255, 0, 0, 255))
 
         self.XSPEEDSTART = 600
         self.timer = Timer()
@@ -106,6 +105,3 @@ class Obstacle:
 
     def y(self):
         return self.sprite.y
-
-    def get_pos(self):
-        return self.sprite.x, self.sprite.y

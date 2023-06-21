@@ -48,9 +48,9 @@ class Game(pyglet.window.Window):
         self.score = 0
         self.highScore = 0
 
-        self.MAXEPISODE = 150
-        self.COPYCOUNT = 30
-        self.STATESIZE = 6
+        self.MAXEPISODE = 100
+        self.COPYCOUNT = 40
+        self.STATESIZE = 5
         self.ACTIONSIZE = 3
         self.botPlaying = True
         if self.botPlaying:
@@ -145,6 +145,7 @@ class Game(pyglet.window.Window):
     def end(self):
         self.ax.plot(self.xData, self.yData)
         plot.savefig(self.figPath)
+        self.agent.saveModel()
         pyglet.app.exit()
 
     def playing(self):
@@ -212,7 +213,6 @@ class Game(pyglet.window.Window):
 
         npData = np.array([
             [
-                self.player.hitbox.y,
                 self.obstacles[0].x(),
                 self.obstacles[0].y(),
                 self.obstacles[0].width,

@@ -49,8 +49,8 @@ class Game(pyglet.window.Window):
         self.highScore = 0
 
         self.MAXEPISODE = 100
-        self.COPYCOUNT = 40
-        self.STATESIZE = 5
+        self.COPYCOUNT = 30
+        self.STATESIZE = 6
         self.ACTIONSIZE = 3
         self.botPlaying = True
         if self.botPlaying:
@@ -211,17 +211,26 @@ class Game(pyglet.window.Window):
         if len(self.obstacles) < 1:
             return None
 
-        npData = np.array([
+        npData = np.array(
             [
+                self.player.hitbox.y,
                 self.obstacles[0].x(),
                 self.obstacles[0].y(),
                 self.obstacles[0].width,
                 self.obstacles[0].height,
                 self.obstacles[0].xSpeed
-            ]
+            ])
+
+        normVector = np.array([
+            1./700,
+            1./1500,
+            1./700,
+            1./90,
+            1./500,
+            1./1500
         ])
-        npData = preprocessing.normalize(npData)
-        return npData
+        normalizedData = np.multiply(npData, normVector, dtype=np.float32)
+        return normalizedData[np.newaxis, :]
 
     def checkCollisions(self):
         pX = self.player.hitbox.x

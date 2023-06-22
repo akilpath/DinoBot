@@ -15,14 +15,14 @@ class Agent:
         self.modelNetwork, self.targetNetwork = self.initializeModels()
         self.copyWeights()
         self.gamma = 0.95
-        self.epsilon = 0.5
+        self.epsilon = 0.3
         self.decayRate = 0.90
         self.batchSize = 64
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
         self.memory = deque(maxlen=50000)
-        self.tempExperience = deque(maxlen=450)
+        self.tempExperience = deque(maxlen=390)
 
     def decayEpsilon(self):
         if self.epsilon <= self.epsilonMin:

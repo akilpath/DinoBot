@@ -49,15 +49,18 @@ class Player:
         if self.state == state: return
 
         if state == 1:
+            # jump
             if self.onGround():
                 self.yspeed = 1100
                 self.sprite.image = self.idleImage
                 self.state = state
         elif state == 2:
+            # duck
             if self.onGround():
                 self.sprite.image = self.duckAnimation
                 self.state = state
         else:
+            # nothing
             self.sprite.image = self.runAnimation
             self.state = 0
         self.stateCount = 0
@@ -80,7 +83,6 @@ class Player:
 class Obstacle:
     def __init__(self):
         self.obstacleType = random.randint(0, 1)
-
         if self.obstacleType == 0:
             self.height = random.randint(50, 140)
             self.width = random.randint(50, 90)

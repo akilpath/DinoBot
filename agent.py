@@ -4,14 +4,16 @@ import tensorflow as tf
 import numpy as np
 import random
 import psutil
+from keras_visualizer import visualizer
+
 
 
 class Agent:
-    def __init__(self, conv=False, frameDim = 0, frameCount = 0):
-        if conv:
-            self.modelNetwork, self.targetNetwork = self.initializeConvModels(frameDim, frameCount)
-        else:
-            self.modelNetwork, self.targetNetwork = self.initializeModels()
+    def __init__(self, stateSize, actionSize):
+        self.ACTIONSIZE = actionSize
+        self.STATESIZE = stateSize
+
+        self.modelNetwork, self.targetNetwork = self.initializeModels()
         self.copyWeights()
         self.gamma = 0.9
         self.epsilon = 0.3
@@ -38,10 +40,11 @@ class Agent:
         self.targetNetwork.set_weights(self.modelNetwork.get_weights())
 
     def train(self):
-        if self.batchSize > len(self.memory):
-            batch = self.memory
-        else:
-            batch = random.sample(self.memory, self.batchSize)
+        if len(self.memory) < self.batchSize:
+            return
+
+        batch = random.sample(self.memory, self.batchSize)
+
         for state, action, reward, nextState in batch:
             predictedQ = self.modelNetwork.predict(state, verbose=0)
 
@@ -57,17 +60,17 @@ class Agent:
 
     def initializeModels(self):
         modelNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, input_dim=5),
+            tf.keras.layers.Dense(64, input_dim=self.STATESIZE),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(8, activation="leaky_relu"),
-            tf.keras.layers.Dense(3, activation="linear")
+            tf.keras.layers.Dense(self.ACTIONSIZE, activation="linear")
         ])
         modelNetwork.summary()
         targetNetwork = tf.keras.models.Sequential([
-            tf.keras.layers.Dense(64, input_dim=5),
+            tf.keras.layers.Dense(64, input_dim=self.STATESIZE),
             tf.keras.layers.Dense(32, activation="leaky_relu"),
             tf.keras.layers.Dense(8, activation="leaky_relu"),
-            tf.keras.layers.Dense(3, activation="linear")
+            tf.keras.layers.Dense(self.ACTIONSIZE, activation="linear")
         ])
 
         modelNetwork.compile(optimizer='adam',
@@ -76,6 +79,8 @@ class Agent:
         targetNetwork.compile(optimizer='adam',
                               loss="huber",
                               metrics=["accuracy"])
+
+        #visualizer(modelNetwork, file_name="visualization", file_format="png", view=True)
 
         return modelNetwork, targetNetwork
 

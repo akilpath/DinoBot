@@ -8,7 +8,7 @@ import time
 import tracemalloc
 from timer import Timer
 from agent import Agent
-
+import tensorflow as tf
 from game import Game
 import psutil
 
@@ -21,6 +21,7 @@ GAME_OVER_STATE = np.array(GAME_OVER_STATE)
 EPISODE_COUNT = 1000
 COPY_COUNT = 30
 pyautogui.PAUSE = 0.001
+STATE_SHAPE = (INPUT_IMAGE_SIZE[0], INPUT_IMAGE_SIZE[1], 4)
 fig, ax = plot.subplots()
 x = []
 y = []
@@ -42,8 +43,7 @@ def main():
     frame = pyautogui.screenshot()
     gameOverRegion = frame.crop(GAME_DONE_BOX).convert("L")
     gameOverRegion.show()
-    return
-    agent = Agent(conv = True, frameDim=INPUT_IMAGE_SIZE[0], frameCount=4)
+    agent = Agent(STATE_SHAPE, 3)
     stepCount = 0
 
     timer = Timer()
@@ -80,7 +80,7 @@ def main():
             if playing or action == 2:
                 doAction(action)
 
-            nextState = np.zeros(shape=(1, 4, INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
+            nextState = np.zeros((4, INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
             for i in range(4):
                 time.sleep(0.01)
                 frame = pyautogui.screenshot()
@@ -92,9 +92,9 @@ def main():
 
                 img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
                 npimg = np.array(img)
-                nextState[0, i] = npimg
-
-            nextState = np.transpose(nextState, (0, 2, 3, 1))
+                nextState[i] = npimg
+            nextState = np.transpose(nextState, (2, 3, 1))
+            nextState = nextState[np.newaxis, :]
             if playing:
                 reward = 2
                 if action == 0 or action == 1:
@@ -124,8 +124,9 @@ def main():
     plot.savefig("./figures/test2.png")
 
 def test():
-    game = Game()
-    game.run()
+    print(tf.config.list_physical_devices('GPU'))
+    # game = Game()
+    # game.run()
 
 
 # try:
@@ -133,4 +134,4 @@ def test():
 # except pyautogui.FailSafeException as e:
 #     ax.plot(x, y)
 #     plot.savefig("./figures/test2.png")
-main()
+test()

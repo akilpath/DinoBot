@@ -9,11 +9,11 @@ from keras_visualizer import visualizer
 
 
 class Agent:
-    def __init__(self, stateSize, actionSize):
+    def __init__(self, stateShape, actionSize):
         self.ACTIONSIZE = actionSize
-        self.STATESIZE = stateSize
+        self.STATESHAPE = stateShape
 
-        self.modelNetwork, self.targetNetwork = self.initializeModels()
+        self.modelNetwork, self.targetNetwork = self.initializeConvModels(self.STATESHAPE)
         self.copyWeights()
         self.gamma = 0.9
         self.epsilon = 0.3
@@ -22,7 +22,7 @@ class Agent:
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
-        self.memory = deque(maxlen=10000)
+        self.memory = deque(maxlen=50000)
         self.tempExperience = deque(maxlen=450)
 
     def decayEpsilon(self):
@@ -84,9 +84,9 @@ class Agent:
 
         return modelNetwork, targetNetwork
 
-    def initializeConvModels(self, inputDim, FRAMECOUNT):
+    def initializeConvModels(self, inputShape):
         model = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputDim, inputDim, FRAMECOUNT)),
+            tf.keras.layers.Rescaling(1. / 255, input_shape=inputShape),
             tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
             tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
             tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
@@ -97,7 +97,7 @@ class Agent:
         ])
 
         target = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=(inputDim, inputDim, FRAMECOUNT)),
+            tf.keras.layers.Rescaling(1. / 255, input_shape=inputShape),
             tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
             tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
             tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),

@@ -220,6 +220,9 @@ class Game(pyglet.window.Window):
                 self.obstacles[0].xSpeed
             ]
         ])
+        normVector = np.array([
+            0,0,0,0,0,0,0
+        ])
         npData = preprocessing.normalize(npData)
         return npData
 

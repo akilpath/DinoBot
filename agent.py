@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import psutil
-from keras_visualizer import visualizer
+#from keras_visualizer import visualizer
 
 
 

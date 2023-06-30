@@ -12,6 +12,8 @@ from agent import Agent
 from game import Game
 import psutil
 
+import tensorflow as tf
+
 
 FRAME_BOUNDING_BOX = (1050, 340, 2410, 650)
 GAME_DONE_BOX = (1696, 578, 1760, 624)
@@ -133,4 +135,6 @@ def test():
 # except pyautogui.FailSafeException as e:
 #     ax.plot(x, y)
 #     plot.savefig("./figures/test2.png")
-main()
+
+print(tf.config.list_physical_devices("GPU"))
+test()

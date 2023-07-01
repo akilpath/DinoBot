@@ -13,7 +13,7 @@ from game import Game
 import psutil
 
 
-FRAME_BOUNDING_BOX = (1050, 340, 2410, 650)
+FRAME_BOUNDING_BOX = (1120, 470, 2340, 730)
 GAME_DONE_BOX = (1696, 578, 1760, 624)
 INPUT_IMAGE_SIZE = (400, 400)
 GAME_OVER_STATE = Image.open("./data/gameover.png").convert("L")
@@ -124,9 +124,17 @@ def main():
     plot.savefig("./figures/test2.png")
 
 def test():
-    print(tf.config.list_physical_devices('GPU'))
-    # game = Game()
-    # game.run()
+    print("Starting")
+    time.sleep(4)
+    frame = pyautogui.screenshot().convert("L")
+
+    gameRegion = frame.crop(FRAME_BOUNDING_BOX).resize((500,500))
+    gameOverRegion = frame.crop(GAME_DONE_BOX)
+    gameOverRegion.save("data/gameover.png")
+    if (np.array(gameOverRegion) == GAME_OVER_STATE).all():
+        print(True)
+    else:
+        print(False)
 
 
 # try:

@@ -1,33 +1,25 @@
-import sys
 import matplotlib.pyplot as plot
 import pyautogui
-import pyglet.window
 import numpy as np
 from PIL import Image
-import time
-import tracemalloc
+from time import sleep
 from timer import Timer
 from agent import Agent
-import tensorflow as tf
-from game import Game
-import psutil
-
 
 FRAME_BOUNDING_BOX = (1120, 470, 2340, 730)
 GAME_DONE_BOX = (1696, 578, 1760, 624)
-INPUT_IMAGE_SIZE = (400, 400)
-GAME_OVER_STATE = Image.open("./data/gameover.png").convert("L")
-GAME_OVER_STATE = np.array(GAME_OVER_STATE)
-EPISODE_COUNT = 1000
+INPUT_IMAGE_SIZE = (200, 200)
+GAME_OVER_STATE = np.array(Image.open("./data/gameover.png").convert("L"))
+EPISODE_COUNT = 100
 COPY_COUNT = 30
 pyautogui.PAUSE = 0.001
-STATE_SHAPE = (INPUT_IMAGE_SIZE[0], INPUT_IMAGE_SIZE[1], 4)
+STATE_SHAPE = (INPUT_IMAGE_SIZE[0], INPUT_IMAGE_SIZE[1], 3)
 fig, ax = plot.subplots()
 x = []
 y = []
 
 
-def doAction(action):
+def doAction(action=2):
     pyautogui.keyUp("space")
     pyautogui.keyUp("down")
 
@@ -39,107 +31,94 @@ def doAction(action):
 
 def main():
     print("Starting")
-    time.sleep(4)
-    frame = pyautogui.screenshot()
-    gameOverRegion = frame.crop(GAME_DONE_BOX).convert("L")
-    gameOverRegion.show()
     agent = Agent(STATE_SHAPE, 3)
-    stepCount = 0
-
+    sleep(4)
     timer = Timer()
-
     for episode in range(EPISODE_COUNT):
-        print(f"Episode {episode}")
+        print(f"Starting Episode {episode}")
         print(f"Agent epsilon: {agent.epsilon}")
         pyautogui.press("space")
         timer.startTimer()
         playing = True
-        state = None
-        # delay of 2 seconds prevents a.i from logging information at the beginning of the game.
-        time.sleep(2)
+        lastState = None
+        lastAction = -1
+        # delay of 1.5 seconds prevents a.i from logging information at the beginning of the game.
+        sleep(1.5)
         while playing:
-            stepCount += 1
-            if state is None:
-                state = np.zeros(shape=(1,4,INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
-                for i in range(4):
-                    time.sleep(0.01)
-                    frame = pyautogui.screenshot()
+            if lastState is None:
+                imgs = []
+                for i in range(3):
+                    sleep(0.01)
+                    frame = pyautogui.screenshot().convert("L")
 
-                    #test to see if the game ended
-                    gameOverRegion = np.array(frame.crop(GAME_DONE_BOX).convert("L"))
-                    if (gameOverRegion == GAME_OVER_STATE).all():
+                    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE)
+                    imgs.append(np.array(img))
+                lastState = np.array(imgs)
+                lastState = np.transpose(lastState, (1, 2, 0))[np.newaxis, :]
+            else:
+                imgs = []
+                for i in range(3):
+                    sleep(0.01)
+                    frame = pyautogui.screenshot().convert("L")
+
+                    if (np.array(frame.crop(GAME_DONE_BOX)) == GAME_OVER_STATE).all():
                         playing = False
 
-                    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
-                    npimg = np.array(img)
-                    state[0, i] = npimg
-                state = np.transpose(state, (0, 2, 3, 1))
-
-            action = agent.chooseAction(state)
-
-            if playing or action == 2:
-                doAction(action)
-
-            nextState = np.zeros((4, INPUT_IMAGE_SIZE[1], INPUT_IMAGE_SIZE[0]))
-            for i in range(4):
-                time.sleep(0.01)
-                frame = pyautogui.screenshot()
-
-                # test to see if the game ended
-                gameOverRegion = np.array(frame.crop(GAME_DONE_BOX).convert("L"))
-                if (gameOverRegion == GAME_OVER_STATE).all():
-                    playing = False
-
-                img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE).convert("L")
-                npimg = np.array(img)
-                nextState[i] = npimg
-            nextState = np.transpose(nextState, (2, 3, 1))
-            nextState = nextState[np.newaxis, :]
-            if playing:
-                reward = 2
-                if action == 0 or action == 1:
-                    #bias towards jumping or ducking to allow it to learn more about jumping
+                    img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE)
+                    imgs.append(np.array(img))
+                state = np.array(imgs)
+                state = np.transpose(state, (1, 2, 0))[np.newaxis, :]
+                if not playing:
                     for i in range(5):
-                        agent.saveTempExperience(state, action, reward, nextState)
-            else:
-                reward = -100
-                for i in range(5):
-                    agent.saveTempExperience(state, action, reward, nextState)
+                        agent.saveTempExperience(lastState, lastAction, -10, state)
+                else:
+                    agent.saveTempExperience(lastState, lastAction, 1, state)
+                lastState = state
 
-            agent.saveTempExperience(state, action, reward, nextState)
-            state = nextState
-
+            lastAction = agent.chooseAction(lastState)
+            if playing:
+                doAction(lastAction)
+        #reset keys
+        doAction()
         lasted = timer.getElapsed()
         print(f"Time survived: {lasted}")
         x.append(episode)
         y.append(lasted)
         agent.copyExperience()
         agent.train()
+        print("Finished training")
         agent.decayEpsilon()
         if episode % COPY_COUNT == 0:
-            print("Weights copied")
             agent.copyWeights()
-        time.sleep(0.25)
+
+        if episode == 50:
+            ax.plot(x, y)
+            plot.savefig("./figures/50.png")
+        if episode == 75:
+            ax.plot(x, y)
+            plot.savefig("./figures/50.png")
+        sleep(0.25)
     ax.plot(x, y)
-    plot.savefig("./figures/test2.png")
+    plot.savefig("./figures/test10.png")
+
 
 def test():
     print("Starting")
-    time.sleep(4)
-    frame = pyautogui.screenshot().convert("L")
+    sleep(4)
+    images = []
+    imgs = []
+    for i in range(3):
+        sleep(0.01)
+        frame = pyautogui.screenshot().convert("L")
 
-    gameRegion = frame.crop(FRAME_BOUNDING_BOX).resize((500,500))
-    gameOverRegion = frame.crop(GAME_DONE_BOX)
-    gameOverRegion.save("data/gameover.png")
-    if (np.array(gameOverRegion) == GAME_OVER_STATE).all():
-        print(True)
-    else:
-        print(False)
+        img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE)
+        images.append(img)
+        imgs.append(np.array(img))
+    lastState = np.array(imgs)
+    lastState = np.transpose(lastState, (1, 2, 0))[np.newaxis, :]
+    for image in images:
+        image.show()
 
 
-# try:
-#     main()
-# except pyautogui.FailSafeException as e:
-#     ax.plot(x, y)
-#     plot.savefig("./figures/test2.png")
-test()
+
+main()

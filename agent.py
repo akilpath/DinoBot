@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import psutil
-from keras_visualizer import visualizer
+#from keras_visualizer import visualizer
 
 
 
@@ -16,14 +16,14 @@ class Agent:
         self.modelNetwork, self.targetNetwork = self.initializeConvModels(self.STATESHAPE)
         self.copyWeights()
         self.gamma = 0.9
-        self.epsilon = 0.3
+        self.epsilon = 0.25
         self.decayRate = 0.90
         self.batchSize = 64
         self.epsilonMin = 0.0001
         self.episodeCount = 0
 
         self.memory = deque(maxlen=50000)
-        self.tempExperience = deque(maxlen=450)
+        self.tempExperience = deque(maxlen=600)
 
     def decayEpsilon(self):
         if self.epsilon <= self.epsilonMin:
@@ -41,6 +41,7 @@ class Agent:
 
     def train(self):
         if len(self.memory) < self.batchSize:
+            print("Not enough exp to train")
             return
 
         batch = random.sample(self.memory, self.batchSize)
@@ -80,32 +81,27 @@ class Agent:
                               loss="huber",
                               metrics=["accuracy"])
 
-        #visualizer(modelNetwork, file_name="visualization", file_format="png", view=True)
-
         return modelNetwork, targetNetwork
 
     def initializeConvModels(self, inputShape):
-        model = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=inputShape),
-            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(128, activation="leaky_relu"),
-            tf.keras.layers.Dense(64, activation="leaky_relu"),
-            tf.keras.layers.Dense(3, activation="linear")
-        ])
+        def buildModel():
+            return tf.keras.models.Sequential([
+                tf.keras.layers.Rescaling(1. / 255, input_shape=inputShape),
+                tf.keras.layers.Conv2D(16, 3, padding='same', activation="relu"),
+                tf.keras.layers.MaxPooling2D(),
+                tf.keras.layers.Conv2D(32, 3, padding='same', activation="relu"),
+                tf.keras.layers.MaxPooling2D(),
+                tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
+                tf.keras.layers.MaxPooling2D(),
+                tf.keras.layers.Flatten(),
+                tf.keras.layers.Dense(200, activation="leaky_relu"),
+                tf.keras.layers.Dense(128, activation="leaky_relu"),
+                tf.keras.layers.Dense(3, activation="linear")
+            ])
+        model = buildModel()
 
-        target = tf.keras.models.Sequential([
-            tf.keras.layers.Rescaling(1. / 255, input_shape=inputShape),
-            tf.keras.layers.Conv2D(16, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(32, 3, strides=(2, 2), padding='same', activation="relu"),
-            tf.keras.layers.Conv2D(64, 3, padding='same', activation="relu"),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(128, activation="leaky_relu"),
-            tf.keras.layers.Dense(64, activation="leaky_relu"),
-            tf.keras.layers.Dense(3, activation="linear")
-        ])
+        target = buildModel()
+
         model.compile(optimizer='adam',
                       loss="huber",
                       metrics=["accuracy"])

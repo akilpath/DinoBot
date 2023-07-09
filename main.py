@@ -10,13 +10,14 @@ FRAME_BOUNDING_BOX = (1120, 470, 2340, 730)
 GAME_DONE_BOX = (1696, 578, 1760, 624)
 INPUT_IMAGE_SIZE = (200, 200)
 GAME_OVER_STATE = np.array(Image.open("./data/gameover.png").convert("L"))
-EPISODE_COUNT = 100
+EPISODE_COUNT = 200
 COPY_COUNT = 30
 pyautogui.PAUSE = 0.001
 STATE_SHAPE = (INPUT_IMAGE_SIZE[0], INPUT_IMAGE_SIZE[1], 3)
 fig, ax = plot.subplots()
 x = []
 y = []
+TEST_NAME = "test11-2"
 
 
 def doAction(action=2):
@@ -54,7 +55,7 @@ def main():
                     img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE)
                     imgs.append(np.array(img))
                 lastState = np.array(imgs)
-                lastState = np.transpose(lastState, (1, 2, 0))[np.newaxis, :]
+                lastState = np.transpose(lastState, (1, 2, 0))
             else:
                 imgs = []
                 for i in range(3):
@@ -67,12 +68,15 @@ def main():
                     img = frame.crop(FRAME_BOUNDING_BOX).resize(INPUT_IMAGE_SIZE)
                     imgs.append(np.array(img))
                 state = np.array(imgs)
-                state = np.transpose(state, (1, 2, 0))[np.newaxis, :]
+                state = np.transpose(state, (1, 2, 0))
                 if not playing:
                     for i in range(5):
                         agent.saveTempExperience(lastState, lastAction, -10, state)
                 else:
-                    agent.saveTempExperience(lastState, lastAction, 1, state)
+                    if lastAction != 2:
+                        agent.saveTempExperience(lastState, lastAction, 2, state)
+                    else:
+                        agent.saveTempExperience(lastState, lastAction, 1, state)
                 lastState = state
 
             lastAction = agent.chooseAction(lastState)
@@ -90,16 +94,11 @@ def main():
         agent.decayEpsilon()
         if episode % COPY_COUNT == 0:
             agent.copyWeights()
-
-        if episode == 50:
-            ax.plot(x, y)
-            plot.savefig("./figures/50.png")
-        if episode == 75:
-            ax.plot(x, y)
-            plot.savefig("./figures/50.png")
         sleep(0.25)
+    agent.saveWeights()
+    print("Weights Saved")
     ax.plot(x, y)
-    plot.savefig("./figures/test10.png")
+    plot.savefig(f"./figures/{TEST_NAME}.png")
 
 
 def test():

@@ -5,7 +5,7 @@ import numpy as np
 import random
 import psutil
 #from keras_visualizer import visualizer
-
+import tensorflow.python.framework.errors_impl
 
 
 class Agent:
@@ -14,16 +14,20 @@ class Agent:
         self.STATESHAPE = stateShape
 
         self.modelNetwork, self.targetNetwork = self.initializeConvModels(self.STATESHAPE)
+        try:
+            self.modelNetwork.load_weights("data/weights.h5")
+        except Exception as e:
+            print(e)
+
         self.copyWeights()
         self.gamma = 0.9
-        self.epsilon = 0.25
+        self.epsilon = 0.3
         self.decayRate = 0.90
         self.batchSize = 64
         self.epsilonMin = 0.0001
-        self.episodeCount = 0
 
-        self.memory = deque(maxlen=50000)
-        self.tempExperience = deque(maxlen=600)
+        self.memory = deque(maxlen=100000)
+        self.tempExperience = deque(maxlen=450)
 
     def decayEpsilon(self):
         if self.epsilon <= self.epsilonMin:
@@ -35,6 +39,7 @@ class Agent:
 
     def copyExperience(self):
         self.memory += self.tempExperience
+        self.tempExperience.clear()
 
     def copyWeights(self):
         self.targetNetwork.set_weights(self.modelNetwork.get_weights())
@@ -46,15 +51,37 @@ class Agent:
 
         batch = random.sample(self.memory, self.batchSize)
 
-        for state, action, reward, nextState in batch:
-            predictedQ = self.modelNetwork.predict(state, verbose=0)
+        states = []
+        actions = []
+        rewards = []
+        nextStates = []
+        for i in range(self.batchSize):
+            states.append(batch[i][0])
+            actions.append(batch[i][1])
+            rewards.append(batch[i][2])
+            nextStates.append(batch[i][3])
+        states = np.array(states)
+        actions = np.array(actions)
+        rewards = np.array(rewards)
+        nextStates = np.array(nextStates)
 
-            targetQ = self.targetNetwork.predict(nextState, verbose=0)
-            if reward == -10:
-                predictedQ[0, action] = reward
+        predictedQ = self.modelNetwork.predict(states, verbose=0)
+        targetQ = self.modelNetwork.predict(nextStates, verbose=0)
+        for i in range(self.batchSize):
+            if rewards[i] == -10:
+                predictedQ[i, actions[i]] = rewards[i]
             else:
-                predictedQ[0, action] = reward + self.gamma * np.max(targetQ, axis=1)
-            self.modelNetwork.fit(state, predictedQ, verbose=0)
+                predictedQ[i, actions[i]] = rewards[i] + self.gamma*np.max(targetQ[i])
+        self.modelNetwork.fit(states, predictedQ, verbose=0)
+        # for state, action, reward, nextState in batch:
+        #     predictedQ = self.modelNetwork.predict(state, verbose=0)
+        #
+        #     targetQ = self.targetNetwork.predict(nextState, verbose=0)
+        #     if reward == -10:
+        #         predictedQ[0, action] = reward
+        #     else:
+        #         predictedQ[0, action] = reward + self.gamma * np.max(targetQ, axis=1)
+        #     self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
         print(f"Memory length: {len(self.memory)}")
         print(f"Memory Usage: {psutil.virtual_memory()[3] / float((pow(10, 9)))}")
@@ -114,10 +141,12 @@ class Agent:
     def chooseAction(self, state) -> int:
         if np.random.random() < self.epsilon:
             return np.random.randint(3)
-
-        output = self.modelNetwork.predict(state, verbose=0)
+        output = self.modelNetwork.predict(state[np.newaxis, :], verbose=0)
         actionToTake = np.argmax(output, axis=1)
         return actionToTake[0]
 
     def saveModel(self):
         tf.saved_model.save(self.modelNetwork, "./")
+
+    def saveWeights(self):
+        self.modelNetwork.save_weights("data/weights.h5", save_format="h5")

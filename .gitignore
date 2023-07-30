@@ -2,4 +2,5 @@
 venv/
 .idea/
 *.pyc
+data/weights.h5
 __pycache__/

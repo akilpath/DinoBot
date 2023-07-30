@@ -20,11 +20,11 @@ class Agent:
             print(e)
 
         self.copyWeights()
-        self.gamma = 0.9
-        self.epsilon = 0.3
+        self.gamma = 0.97
+        self.epsilon = 0.2
         self.decayRate = 0.90
         self.batchSize = 64
-        self.epsilonMin = 0.0001
+        self.epsilonMin = 0.00001
 
         self.memory = deque(maxlen=100000)
         self.tempExperience = deque(maxlen=450)
@@ -39,7 +39,6 @@ class Agent:
 
     def copyExperience(self):
         self.memory += self.tempExperience
-        self.tempExperience.clear()
 
     def copyWeights(self):
         self.targetNetwork.set_weights(self.modelNetwork.get_weights())
@@ -73,15 +72,6 @@ class Agent:
             else:
                 predictedQ[i, actions[i]] = rewards[i] + self.gamma*np.max(targetQ[i])
         self.modelNetwork.fit(states, predictedQ, verbose=0)
-        # for state, action, reward, nextState in batch:
-        #     predictedQ = self.modelNetwork.predict(state, verbose=0)
-        #
-        #     targetQ = self.targetNetwork.predict(nextState, verbose=0)
-        #     if reward == -10:
-        #         predictedQ[0, action] = reward
-        #     else:
-        #         predictedQ[0, action] = reward + self.gamma * np.max(targetQ, axis=1)
-        #     self.modelNetwork.fit(state, predictedQ, verbose=0)
         print("Finished Training")
         print(f"Memory length: {len(self.memory)}")
         print(f"Memory Usage: {psutil.virtual_memory()[3] / float((pow(10, 9)))}")

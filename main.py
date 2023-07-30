@@ -10,14 +10,14 @@ FRAME_BOUNDING_BOX = (1120, 470, 2340, 730)
 GAME_DONE_BOX = (1696, 578, 1760, 624)
 INPUT_IMAGE_SIZE = (200, 200)
 GAME_OVER_STATE = np.array(Image.open("./data/gameover.png").convert("L"))
-EPISODE_COUNT = 200
+EPISODE_COUNT = 150
 COPY_COUNT = 30
 pyautogui.PAUSE = 0.001
 STATE_SHAPE = (INPUT_IMAGE_SIZE[0], INPUT_IMAGE_SIZE[1], 3)
 fig, ax = plot.subplots()
 x = []
 y = []
-TEST_NAME = "test11-2"
+TEST_NAME = "test11-7"
 
 
 def doAction(action=2):
@@ -33,6 +33,7 @@ def doAction(action=2):
 def main():
     print("Starting")
     agent = Agent(STATE_SHAPE, 3)
+    plot.figtext(0.8, 0.9, f"Gamma: {agent.gamma}")
     sleep(4)
     timer = Timer()
     for episode in range(EPISODE_COUNT):
@@ -43,8 +44,8 @@ def main():
         playing = True
         lastState = None
         lastAction = -1
-        # delay of 1.5 seconds prevents a.i from logging information at the beginning of the game.
-        sleep(1.5)
+        # delay of 2.5 seconds prevents a.i from logging information at the beginning of the game.
+        sleep(3.1)
         while playing:
             if lastState is None:
                 imgs = []
@@ -72,17 +73,20 @@ def main():
                 if not playing:
                     for i in range(5):
                         agent.saveTempExperience(lastState, lastAction, -10, state)
-                else:
-                    if lastAction != 2:
-                        agent.saveTempExperience(lastState, lastAction, 2, state)
-                    else:
+                elif timer.getElapsed() > 20:
+                    for i in range(5):
                         agent.saveTempExperience(lastState, lastAction, 1, state)
+                elif timer.getElapsed() > 10:
+                    for i in range(3):
+                        agent.saveTempExperience(lastState, lastAction, 1, state)
+                else:
+                    agent.saveTempExperience(lastState, lastAction, 1, state)
                 lastState = state
 
             lastAction = agent.chooseAction(lastState)
             if playing:
                 doAction(lastAction)
-        #reset keys
+        # reset keys
         doAction()
         lasted = timer.getElapsed()
         print(f"Time survived: {lasted}")
@@ -98,6 +102,9 @@ def main():
     agent.saveWeights()
     print("Weights Saved")
     ax.plot(x, y)
+    plot.xlabel("Episode")
+    plot.ylabel("Time Survived")
+    plot.figtext(0.2, 0.9, f"Experience Replay Length: {len(agent.memory)}")
     plot.savefig(f"./figures/{TEST_NAME}.png")
 
 
@@ -117,7 +124,6 @@ def test():
     lastState = np.transpose(lastState, (1, 2, 0))[np.newaxis, :]
     for image in images:
         image.show()
-
 
 
 main()
